@@ -105,7 +105,7 @@ class SonicTsHostProber(object):
             outs = out.splitlines()
             total_cpu_percent += float(outs[-1])
             probe_count += 1
-        self.avg_cpu_percent = total_cpu_percent / (probe_count if probe_count != 0 else 1
+        self.avg_cpu_percent = total_cpu_percent / (probe_count if probe_count != 0 else 1)
 
 class PacketSizeTooSmallError(Exception):
     def __init__(self, message):
