@@ -53,7 +53,7 @@ def sonic_host_test(host, ports, packet_size, flow_size, duration):
         result["actual_flow_size"] = 0
         for remote_host in remote_hosts:
             result["actual_flow_size"] += remote_host.actual_flow_size
-        result["actual_flow_size"] /= len(ports)
+        result["actual_flow_size"] /= len(remote_hosts)
         return result
     except PacketSizeTooSmallError as e:
         print("Test failed, {}".format(e.message))
@@ -68,7 +68,8 @@ def batch_sonic_host_test(parameters):
             duration    = p['duration']
             step        = p['step']
             for i in range(start_port, end_port + 1, step):
-                result = sonic_host_test("10.1.100.60", list(range(start_port, i)), packet_size, flow_size, duration)
+                print("Test start: {}->{} {} {}".format(start_port, end_port, packet_size, flow_size))
+                result = sonic_host_test("10.1.100.60", list(range(start_port, i + 1)), packet_size, flow_size, duration)
                 f.write("{},{},{},{},{},{}\n".format(i, packet_size, flow_size, duration, result["cpu"], result["actual_flow_size"]))
 
 if __name__ == '__main__':

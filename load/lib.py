@@ -14,14 +14,14 @@ class IOGenerator(object):
     def __init__(self, packet_size, flow_size, force=True):
         self.packet_size = packet_size
         self.flow_size   = flow_size
+        self.force       = force
 
     def start(self, target, duration):
         start_time = time.time()
         total_load = 0
         packet_content = self.generate_random_string()
         while True:
-            begin_time = time.time()
-            if begin_time - start_time > duration:
+            if time.time() - start_time > duration:
                 break
 
             # hand over traffic
@@ -29,19 +29,20 @@ class IOGenerator(object):
             total_load += self.packet_size
 
             # traffic control
-            # flow_size   = packet_size / (elapsed_time + delay_time)
-            elapsed_time = time.time() - begin_time
-            delay_time   = (self.packet_size - self.flow_size * elapsed_time) / self.flow_size
-            if force and delay_time < 0:
+            # flow_size   = total_load / (elapsed_time + delay_time)
+            elapsed_time = time.time() - start_time
+            delay_time   = (total_load - self.flow_size * elapsed_time) / self.flow_size
+            if self.force and delay_time < 0:
                 raise PacketSizeTooSmallError("The packet_size is too small, it should be larger than {}".format(int(self.flow_size * elapsed_time)))
-            time.sleep(delay_time)
+            elif delay_time > 0:
+                time.sleep(delay_time)
         actual_flow_size = total_load / (time.time() - start_time)
-        self.actual_flow_size = actual_flow_size
+        target.actual_flow_size = actual_flow_size
         return actual_flow_size
     
     def generate_random_string(self):
         letters = string.ascii_lowercase
-        return''.join(random.choice(letters) for i in range(self.packet_size))
+        return ''.join(random.choice(letters) for i in range(self.packet_size))
 
 class LocalHostCosumer(object):
     def receive(self, packet_content):
