@@ -11,7 +11,7 @@ class IOGenerator(object):
     The generator can let user to generate IO with specific need.
     """
 
-    def __init__(self, packet_size, flow_size):
+    def __init__(self, packet_size, flow_size, force=True):
         self.packet_size = packet_size
         self.flow_size   = flow_size
 
@@ -32,10 +32,12 @@ class IOGenerator(object):
             # flow_size   = packet_size / (elapsed_time + delay_time)
             elapsed_time = time.time() - begin_time
             delay_time   = (self.packet_size - self.flow_size * elapsed_time) / self.flow_size
-            if delay_time < 0:
+            if force and delay_time < 0:
                 raise PacketSizeTooSmallError("The packet_size is too small, it should be larger than {}".format(int(self.flow_size * elapsed_time)))
             time.sleep(delay_time)
-        return total_load / (time.time() - start_time)
+        actual_flow_size = total_load / (time.time() - start_time)
+        self.actual_flow_size = actual_flow_size
+        return actual_flow_size
     
     def generate_random_string(self):
         letters = string.ascii_lowercase

@@ -6,7 +6,7 @@ from lib import SonicTsHost, SonicTsHostCosumer,SonicTsHostProber
 
 MAX_WAITING = 10
 
-def LocalHostTest(packet_size, flow_size, duration):
+def local_host_test(packet_size, flow_size, duration):
     ''' This is for local testing '''
     generator = IOGenerator(packet_size, flow_size)
     cosumer = LocalHostCosumer()
@@ -23,9 +23,9 @@ def LocalHostTest(packet_size, flow_size, duration):
     except PacketSizeTooSmallError as e:
         print("Test failed, {}".format(e.message))
 
-def SonicHostTest(host, ports, packet_size, flow_size, duration):
+def sonic_host_test(host, ports, packet_size, flow_size, duration):
     ''' This is for SONiC console port testing '''
-    generator = IOGenerator(packet_size, flow_size)
+    generator = IOGenerator(packet_size, flow_size, force=False)
     sonic_host = SonicTsHost(host)
     probe_host = sonic_host.join()
     remote_hosts = []
@@ -48,18 +48,54 @@ def SonicHostTest(host, ports, packet_size, flow_size, duration):
         probe_thread.join()
         print("Test ended:")
         print("Avg CPU%: {}".format(probe_host.avg_cpu_percent))
-        return probe_host.avg_cpu_percent
+        result = {}
+        result["cpu"] = probe_host.avg_cpu_percent
+        result["actual_flow_size"] = 0
+        for remote_host in remote_hosts:
+            result["actual_flow_size"] += remote_host.actual_flow_size
+        result["actual_flow_size"] /= len(ports)
+        return result
     except PacketSizeTooSmallError as e:
         print("Test failed, {}".format(e.message))
 
+def batch_sonic_host_test(parameters):
+    with open("result.csv", "w") as f:
+        for p in parameters:
+            start_port  = p['start_port']
+            end_port    = p['end_port']
+            packet_size = p['packet_size']
+            flow_size   = p['flow_size']
+            duration    = p['duration']
+            step        = p['step']
+            for i in range(start_port, end_port + 1, step):
+                result = sonic_host_test("10.1.100.60", list(range(start_port, i)), packet_size, flow_size, duration)
+                f.write("{},{},{},{},{},{}\n".format(i, packet_size, flow_size, duration, result["cpu"], result["actual_flow_size"]))
+
 if __name__ == '__main__':
     # LocalHostTest(packet_size=8*1024, flow_size=1024*1024, duration=10)
-    start_port  = 1
-    end_port    = 10
-    packet_size = 1024
-    flow_size   = 1024
-    duration    = 60
-    with open("result.csv", "w") as f:
-        for i in range(start_port, end_port + 1):
-            cpu = SonicHostTest("10.1.100.60", list(range(start_port, i)), packet_size, flow_size, duration)
-            f.write("{},{},{},{}\n".format(i, packet_size, flow_size, cpu))
+    parameters = []
+    parameters.append({
+        'start_port' : 1,
+        'end_port'   : 10,
+        'packet_size': 1024,
+        'flow_size'  : 1200,
+        'duration'   : 60,
+        'step'       : 1
+    })
+    parameters.append({
+        'start_port' : 1,
+        'end_port'   : 10,
+        'packet_size': 128,
+        'flow_size'  : 1200,
+        'duration'   : 60,
+        'step'       : 1
+    })
+    parameters.append({
+        'start_port' : 1,
+        'end_port'   : 10,
+        'packet_size': 32,
+        'flow_size'  : 1200,
+        'duration'   : 60,
+        'step'       : 1
+    })
+    batch_sonic_host_test(parameters)
