@@ -54,7 +54,7 @@ def sonic_host_test(host, ports, packet_size, flow_size, duration):
         for remote_host in remote_hosts:
             remote_host.close()
             result["actual_flow_size"] += remote_host.actual_flow_size
-        result["actual_flow_size"] /= len(remote_hosts)
+        result["actual_flow_size"] /= len(remote_hosts) if len(remote_hosts) > 0 else 1
         return result
     except PacketSizeTooSmallError as e:
         print("Test failed, {}".format(e.message))
