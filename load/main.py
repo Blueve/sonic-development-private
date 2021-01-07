@@ -71,7 +71,8 @@ def batch_sonic_host_test(parameters):
             for i in range(start_port, end_port + 1, step):
                 print("Test start: {}->{} {} {}".format(start_port, i, packet_size, flow_size))
                 result = sonic_host_test("10.1.100.60", list(range(start_port, i + 1)), packet_size, flow_size, duration)
-                f.write("{},{},{},{},{},{}\n".format(i, packet_size, flow_size, duration, result["cpu"], result["actual_flow_size"]))
+                f.write("{},{},{},{},{},{}\n".format(i + 1, packet_size, flow_size, duration, result["cpu"], result["actual_flow_size"]))
+                print("{}, {}%, {} B/s".format(i, result["cpu"], result["actual_flow_size"]))
                 time.sleep(5)
 
 if __name__ == '__main__':

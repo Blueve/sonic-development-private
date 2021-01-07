@@ -98,8 +98,6 @@ class SonicTsHostCosumer(object):
             self.proc.expect_exact(packet_buffer)
     
     def close(self):
-        self.proc.sendcontrol('a')
-        self.proc.sendcontrol('x')
         self.proc.close(force=True)
 
 class SonicTsHostProber(object):
