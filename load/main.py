@@ -16,7 +16,7 @@ def local_host_test(packet_size, flow_size, duration):
         probe_thread = threading.Thread(target=cosumer.probe, args=(duration,))
         probe_thread.start()
         avg_flow_size = generator.start(cosumer, duration)
-        probe_thread.join()
+        probe_thread.join(MAX_WAITING)
         print("Test ended:")
         print("Avg Flow: {} KiB/s".format(avg_flow_size / 1024))
         print("Avg CPU%: {}".format(cosumer.avg_cpu_percent))
@@ -44,14 +44,13 @@ def sonic_host_test(host, ports, packet_size, flow_size, duration):
             t.start()
 
         for t in testing_threads:
-            t.join()
-        probe_thread.join()
-        print("Test ended:")
-        print("Avg CPU%: {}".format(probe_host.avg_cpu_percent))
+            t.join(MAX_WAITING)
+        probe_thread.join(MAX_WAITING)
         result = {}
         result["cpu"] = probe_host.avg_cpu_percent
         result["actual_flow_size"] = 0
         for remote_host in remote_hosts:
+            remote_host.close()
             result["actual_flow_size"] += remote_host.actual_flow_size
         result["actual_flow_size"] /= len(remote_hosts)
         return result
@@ -68,7 +67,7 @@ def batch_sonic_host_test(parameters):
             duration    = p['duration']
             step        = p['step']
             for i in range(start_port, end_port + 1, step):
-                print("Test start: {}->{} {} {}".format(start_port, end_port, packet_size, flow_size))
+                print("Test start: {}->{} {} {}".format(start_port, i + 1, packet_size, flow_size))
                 result = sonic_host_test("10.1.100.60", list(range(start_port, i + 1)), packet_size, flow_size, duration)
                 f.write("{},{},{},{},{},{}\n".format(i, packet_size, flow_size, duration, result["cpu"], result["actual_flow_size"]))
 

@@ -5,6 +5,8 @@ import time
 import random
 import string
 
+from os import fpathconf, linesep
+
 class IOGenerator(object):
     """
     The IO generator.
@@ -13,6 +15,7 @@ class IOGenerator(object):
 
     def __init__(self, packet_size, flow_size, force=True):
         self.packet_size = packet_size
+        self.buffer_size = fpathconf(0, 'PC_MAX_CANON') - len(os.linesep)
         self.flow_size   = flow_size
         self.force       = force
 
@@ -20,12 +23,13 @@ class IOGenerator(object):
         start_time = time.time()
         total_load = 0
         packet_content = self.generate_random_string()
+        packet_buffers = [packet_content[i:i+self.buffer_size] for i in range(0, len(packet_content), self.buffer_size)]
         while True:
             if time.time() - start_time > duration:
                 break
 
             # hand over traffic
-            target.receive(packet_content)
+            target.receive(packet_buffers)
             total_load += self.packet_size
 
             # traffic control
@@ -79,12 +83,24 @@ class SonicTsHost(object):
         return SonicTsHostProber(proc)
 
 class SonicTsHostCosumer(object):
+    TERMINATE_TEXT = "Thanks for using picocom"
     def __init__(self, proc):
-        self.proc = proc
+        self.proc             = proc
+        self.actual_flow_size = 0
 
-    def receive(self, packet_content):
-        self.proc.send(packet_content)
-        self.proc.expect(packet_content)
+        # pexpect set this value to 50ms by default, which will cause we never got chance to send faster
+        self.proc.delaybeforesend = None
+        self.proc.delayafterread  = None
+
+    def receive(self, packet_buffers):
+        for packet_buffer in packet_buffers:
+            self.proc.sendline(packet_buffer)
+            self.proc.expect_exact(packet_content)
+    
+    def close(self):
+        self.proc.sendcontrol('a')
+        self.proc.sendcontrol('x')
+        self.proc.expect(pexpect.EOF)
 
 class SonicTsHostProber(object):
     CPU_PROBE_CMD_PATTERN = "top -bn1 | grep \"Cpu(s)\" | sed \"s/.*, *\([0-9.]*\)%* id.*/\\1/\" | awk '{print 100 - $1\"%\"}'"
