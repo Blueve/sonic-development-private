@@ -1,4 +1,5 @@
 import threading
+import time
 
 from lib import IOGenerator, PacketSizeTooSmallError
 from lib import LocalHostCosumer
@@ -30,7 +31,8 @@ def sonic_host_test(host, ports, packet_size, flow_size, duration):
     probe_host = sonic_host.join()
     remote_hosts = []
     for port in ports:
-        remote_hosts.append(sonic_host.connect(port, 9600))
+        if port >= 0:
+            remote_hosts.append(sonic_host.connect(port, 9600))
     
     try:
         probe_thread = threading.Thread(target=probe_host.probe, args=(duration,))
@@ -44,8 +46,8 @@ def sonic_host_test(host, ports, packet_size, flow_size, duration):
             t.start()
 
         for t in testing_threads:
-            t.join(MAX_WAITING)
-        probe_thread.join(MAX_WAITING)
+            t.join(duration + MAX_WAITING)
+        probe_thread.join(duration + MAX_WAITING)
         result = {}
         result["cpu"] = probe_host.avg_cpu_percent
         result["actual_flow_size"] = 0
@@ -67,23 +69,24 @@ def batch_sonic_host_test(parameters):
             duration    = p['duration']
             step        = p['step']
             for i in range(start_port, end_port + 1, step):
-                print("Test start: {}->{} {} {}".format(start_port, i + 1, packet_size, flow_size))
+                print("Test start: {}->{} {} {}".format(start_port, i, packet_size, flow_size))
                 result = sonic_host_test("10.1.100.60", list(range(start_port, i + 1)), packet_size, flow_size, duration)
                 f.write("{},{},{},{},{},{}\n".format(i, packet_size, flow_size, duration, result["cpu"], result["actual_flow_size"]))
+                time.sleep(5)
 
 if __name__ == '__main__':
     # LocalHostTest(packet_size=8*1024, flow_size=1024*1024, duration=10)
     parameters = []
     parameters.append({
-        'start_port' : 1,
+        'start_port' : -1,
         'end_port'   : 10,
-        'packet_size': 1024,
+        'packet_size': 32,
         'flow_size'  : 1200,
         'duration'   : 60,
         'step'       : 1
     })
     parameters.append({
-        'start_port' : 1,
+        'start_port' : -1,
         'end_port'   : 10,
         'packet_size': 128,
         'flow_size'  : 1200,
@@ -91,9 +94,9 @@ if __name__ == '__main__':
         'step'       : 1
     })
     parameters.append({
-        'start_port' : 1,
+        'start_port' : -1,
         'end_port'   : 10,
-        'packet_size': 32,
+        'packet_size': 1024,
         'flow_size'  : 1200,
         'duration'   : 60,
         'step'       : 1

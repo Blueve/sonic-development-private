@@ -15,7 +15,7 @@ class IOGenerator(object):
 
     def __init__(self, packet_size, flow_size, force=True):
         self.packet_size = packet_size
-        self.buffer_size = fpathconf(0, 'PC_MAX_CANON') - len(os.linesep)
+        self.buffer_size = fpathconf(0, 'PC_MAX_CANON') - len(linesep)
         self.flow_size   = flow_size
         self.force       = force
 
@@ -95,12 +95,12 @@ class SonicTsHostCosumer(object):
     def receive(self, packet_buffers):
         for packet_buffer in packet_buffers:
             self.proc.sendline(packet_buffer)
-            self.proc.expect_exact(packet_content)
+            self.proc.expect_exact(packet_buffer)
     
     def close(self):
         self.proc.sendcontrol('a')
         self.proc.sendcontrol('x')
-        self.proc.expect(pexpect.EOF)
+        self.proc.close(force=True)
 
 class SonicTsHostProber(object):
     CPU_PROBE_CMD_PATTERN = "top -bn1 | grep \"Cpu(s)\" | sed \"s/.*, *\([0-9.]*\)%* id.*/\\1/\" | awk '{print 100 - $1\"%\"}'"
