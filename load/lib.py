@@ -22,15 +22,14 @@ class IOGenerator(object):
     def start(self, target, duration):
         start_time = time.time()
         total_load = 0
-        packet_content = self.generate_random_string()
-        packet_buffers = [packet_content[i:i+self.buffer_size] for i in range(0, len(packet_content), self.buffer_size)]
         while True:
             if time.time() - start_time > duration:
                 break
 
             # hand over traffic
-            target.receive(packet_buffers)
-            total_load += self.packet_size
+            packet_content = self.generate_random_string()
+            packet_buffers = [packet_content[i:i+self.buffer_size] for i in range(0, len(packet_content), self.buffer_size)]
+            total_load += target.receive(packet_buffers)
 
             # traffic control
             # flow_size   = total_load / (elapsed_time + delay_time)
@@ -48,17 +47,10 @@ class IOGenerator(object):
         letters = string.ascii_lowercase
         return ''.join(random.choice(letters) for i in range(self.packet_size))
 
-class LocalHostCosumer(object):
-    def receive(self, packet_content):
-        print(packet_content)
-    
-    def probe(self, duration):
-        self.avg_cpu_percent = psutil.cpu_percent(interval=duration)
-
 class SonicTsHost(object):
     PURE_SSH_CMD_PATTERN = "ssh {}@{}"
     SSH_CMD_PATTERN = "ssh {}@{} \"{}\""
-    TTY_CMD_PATTERN = "sudo picocom -b {} {}{}"
+    TTY_CMD_PATTERN = "sudo picocom -f h -b {} {}{}"
 
     def __init__(self, hostname, user="admin", pwd="YourPaSsWoRd", tty_prefix="/dev/ttyUSB"):
         self.hostname   = hostname
@@ -93,9 +85,11 @@ class SonicTsHostCosumer(object):
         self.proc.delayafterread  = None
 
     def receive(self, packet_buffers):
+        byte_count = 0
         for packet_buffer in packet_buffers:
-            self.proc.sendline(packet_buffer)
-            self.proc.expect_exact(packet_buffer)
+            byte_count += self.proc.sendline(packet_buffer)
+            self.proc.expect_exact(packet_buffer, searchwindowsize=len(packet_buffer)*2)
+        return byte_count
     
     def close(self):
         self.proc.close(force=True)

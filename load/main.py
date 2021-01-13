@@ -7,23 +7,6 @@ from lib import SonicTsHost, SonicTsHostCosumer,SonicTsHostProber
 
 MAX_WAITING = 10
 
-def local_host_test(packet_size, flow_size, duration):
-    ''' This is for local testing '''
-    generator = IOGenerator(packet_size, flow_size)
-    cosumer = LocalHostCosumer()
-    print("Local cosumer ready\n")
-
-    try:
-        probe_thread = threading.Thread(target=cosumer.probe, args=(duration,))
-        probe_thread.start()
-        avg_flow_size = generator.start(cosumer, duration)
-        probe_thread.join(MAX_WAITING)
-        print("Test ended:")
-        print("Avg Flow: {} KiB/s".format(avg_flow_size / 1024))
-        print("Avg CPU%: {}".format(cosumer.avg_cpu_percent))
-    except PacketSizeTooSmallError as e:
-        print("Test failed, {}".format(e.message))
-
 def sonic_host_test(host, ports, packet_size, flow_size, duration):
     ''' This is for SONiC console port testing '''
     generator = IOGenerator(packet_size, flow_size, force=False)
@@ -76,30 +59,4 @@ def batch_sonic_host_test(parameters):
                 time.sleep(5)
 
 if __name__ == '__main__':
-    # LocalHostTest(packet_size=8*1024, flow_size=1024*1024, duration=10)
-    parameters = []
-    parameters.append({
-        'start_port' : -1,
-        'end_port'   : 10,
-        'packet_size': 32,
-        'flow_size'  : 1200,
-        'duration'   : 60,
-        'step'       : 1
-    })
-    parameters.append({
-        'start_port' : -1,
-        'end_port'   : 10,
-        'packet_size': 128,
-        'flow_size'  : 1200,
-        'duration'   : 60,
-        'step'       : 1
-    })
-    parameters.append({
-        'start_port' : -1,
-        'end_port'   : 10,
-        'packet_size': 1024,
-        'flow_size'  : 1200,
-        'duration'   : 60,
-        'step'       : 1
-    })
-    batch_sonic_host_test(parameters)
+    sonic_host_test("10.1.100.60", list(range(0, 12)), packet_size=64, flow_size=10*1024, duration=60)
