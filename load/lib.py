@@ -61,7 +61,7 @@ class SonicTsHost(object):
     def connect(self, line_num, baud):
         tty_cmd = SonicTsHost.TTY_CMD_PATTERN.format(baud, self.tty_prefix, line_num)
         ssh_cmd = SonicTsHost.SSH_CMD_PATTERN.format(self.user, self.hostname, tty_cmd)
-        proc = pexpect.spawn(ssh_cmd)
+        proc = pexpect.spawn(ssh_cmd, echo=False)
         proc.expect("admin@{}'s password:".format(self.hostname))
         proc.sendline(self.pwd)
         proc.expect("Terminal ready")
@@ -88,7 +88,7 @@ class SonicTsHostCosumer(object):
         byte_count = 0
         for packet_buffer in packet_buffers:
             byte_count += self.proc.sendline(packet_buffer)
-            self.proc.expect_exact(packet_buffer, searchwindowsize=len(packet_buffer)*2)
+            self.proc.expect_exact(packet_buffer[:byte_count], searchwindowsize=len(packet_buffer)*2, timeout=120)
         return byte_count
     
     def close(self):

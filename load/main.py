@@ -2,7 +2,6 @@ import threading
 import time
 
 from lib import IOGenerator, PacketSizeTooSmallError
-from lib import LocalHostCosumer
 from lib import SonicTsHost, SonicTsHostCosumer,SonicTsHostProber
 
 MAX_WAITING = 10
@@ -59,4 +58,29 @@ def batch_sonic_host_test(parameters):
                 time.sleep(5)
 
 if __name__ == '__main__':
-    sonic_host_test("10.1.100.60", list(range(0, 12)), packet_size=64, flow_size=10*1024, duration=60)
+    parameters = []
+    parameters.append({
+        'start_port' : -1,
+        'end_port'   : 48,
+        'packet_size': 32,
+        'flow_size'  : 1200,
+        'duration'   : 60,
+        'step'       : 4
+    })
+    parameters.append({
+        'start_port' : -1,
+        'end_port'   : 48,
+        'packet_size': 128,
+        'flow_size'  : 1200,
+        'duration'   : 60,
+        'step'       : 4
+    })
+    parameters.append({
+        'start_port' : -1,
+        'end_port'   : 48,
+        'packet_size': 1024,
+        'flow_size'  : 1200,
+        'duration'   : 60,
+        'step'       : 4
+    })
+    batch_sonic_host_test(parameters)
