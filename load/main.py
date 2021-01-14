@@ -63,7 +63,7 @@ if __name__ == '__main__':
         'start_port' : -1,
         'end_port'   : 48,
         'packet_size': 32,
-        'flow_size'  : 1200,
+        'flow_size'  : 100*1024,
         'duration'   : 60,
         'step'       : 4
     })
@@ -71,7 +71,7 @@ if __name__ == '__main__':
         'start_port' : -1,
         'end_port'   : 48,
         'packet_size': 128,
-        'flow_size'  : 1200,
+        'flow_size'  : 100*1024,
         'duration'   : 60,
         'step'       : 4
     })
@@ -79,7 +79,7 @@ if __name__ == '__main__':
         'start_port' : -1,
         'end_port'   : 48,
         'packet_size': 1024,
-        'flow_size'  : 1200,
+        'flow_size'  : 100*1024,
         'duration'   : 60,
         'step'       : 4
     })
